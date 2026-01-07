@@ -2,7 +2,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, RouterModule } from '@angular/router';
 import { CheckoutService } from '../../../core/services/checkout.service';
 import { PaymentService } from '../../../core/services/payment.service';
 import { CartService } from '../../../core/services/cart.service';
@@ -22,7 +22,7 @@ import {
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './checkout.html',
   styleUrl: './checkout.css'
 })
