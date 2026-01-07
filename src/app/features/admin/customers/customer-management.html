@@ -1,0 +1,610 @@
+<div class="customer-container">
+  <!-- Header -->
+  <div class="customer-header">
+    <h1>👥 Customer Management</h1>
+    <div class="header-actions">
+      <button class="action-btn" (click)="openValueSegmentsModal()">
+        💎 Value Segments
+      </button>
+      <button class="action-btn" (click)="openTopCustomersModal()">
+        🏆 Top Customers
+      </button>
+      <button class="action-btn primary" (click)="exportCustomers()">
+        📥 Export Data
+      </button>
+      <button class="refresh-btn" (click)="loadCustomers()">
+        🔄 Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Section -->
+  <div class="statistics-section" *ngIf="stats">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-icon">👥</span>
+        <div class="stat-label">Total Customers</div>
+        <div class="stat-value">{{ stats.totalCustomers }}</div>
+      </div>
+
+      <div class="stat-card success">
+        <span class="stat-icon">✅</span>
+        <div class="stat-label">Active Customers</div>
+        <div class="stat-value">{{ stats.activeCustomers }}</div>
+        <div class="stat-percentage">
+          {{ calculatePercentage(stats.activeCustomers, stats.totalCustomers).toFixed(1) }}%
+        </div>
+      </div>
+
+      <div class="stat-card warning">
+        <span class="stat-icon">🆕</span>
+        <div class="stat-label">New (Last 30 Days)</div>
+        <div class="stat-value">{{ stats.customersLast30Days }}</div>
+      </div>
+
+      <div class="stat-card info">
+        <span class="stat-icon">💰</span>
+        <div class="stat-label">Avg Lifetime Value</div>
+        <div class="stat-value">{{ formatPrice(stats.averageLifetimeValue) }}</div>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-icon">📊</span>
+        <div class="stat-label">Avg Orders/Customer</div>
+        <div class="stat-value">{{ stats.averageOrdersPerCustomer.toFixed(1) }}</div>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-icon">🛍️</span>
+        <div class="stat-label">Customers with Orders</div>
+        <div class="stat-value">{{ stats.customersWithOrders }}</div>
+        <div class="stat-percentage">
+          {{ calculatePercentage(stats.customersWithOrders, stats.totalCustomers).toFixed(1) }}%
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Breakdown -->
+    <div class="status-breakdown">
+      <div class="status-item new">
+        <span class="status-count">{{ stats.newCustomers }}</span>
+        <span class="status-label">New</span>
+      </div>
+      <div class="status-item active">
+        <span class="status-count">{{ stats.activeCustomers }}</span>
+        <span class="status-label">Active</span>
+      </div>
+      <div class="status-item inactive">
+        <span class="status-count">{{ stats.inactiveCustomers }}</span>
+        <span class="status-label">Inactive</span>
+      </div>
+      <div class="status-item churned">
+        <span class="status-count">{{ stats.churnedCustomers }}</span>
+        <span class="status-label">Churned</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Filters -->
+  <div class="quick-filters">
+    <button 
+      class="filter-chip"
+      *ngFor="let filter of quickFilters"
+      [class.active]="filters.customerStatus === filter.value"
+      (click)="applyQuickFilter(filter.value)">
+      <span class="filter-chip-icon">{{ filter.icon }}</span>
+      <span>{{ filter.label }}</span>
+      <span class="filter-chip-count">{{ filter.count }}</span>
+    </button>
+  </div>
+
+  <!-- Search & Filters Section -->
+  <div class="search-section">
+    <div class="search-bar">
+      <input 
+        type="text" 
+        [(ngModel)]="filters.searchTerm"
+        (ngModelChange)="onSearchChange($event)"
+        placeholder="🔍 Search by name, email, or phone..."
+        class="search-input">
+      <button class="clear-btn" *ngIf="filters.searchTerm" (click)="filters.searchTerm = ''; onSearchChange('')">
+        ×
+      </button>
+    </div>
+
+    <button class="filters-toggle-btn" (click)="toggleFiltersPanel()">
+      🎛️ Advanced Filters
+      <span class="badge" *ngIf="showFiltersPanel">Open</span>
+    </button>
+
+    <button class="clear-all-btn" (click)="clearFilters()" *ngIf="filters.customerStatus || filters.searchTerm || filters.fromDate">
+      Clear All Filters
+    </button>
+  </div>
+
+  <!-- Advanced Filters Panel -->
+  <div class="filters-panel" *ngIf="showFiltersPanel">
+    <div class="filters-grid">
+      <div class="filter-group">
+        <label>From Date</label>
+        <input type="date" [(ngModel)]="filters.fromDate">
+      </div>
+
+      <div class="filter-group">
+        <label>To Date</label>
+        <input type="date" [(ngModel)]="filters.toDate">
+      </div>
+
+      <div class="filter-group">
+        <label>Min Orders</label>
+        <input type="number" [(ngModel)]="filters.minOrders" placeholder="e.g., 5">
+      </div>
+
+      <div class="filter-group">
+        <label>Max Orders</label>
+        <input type="number" [(ngModel)]="filters.maxOrders" placeholder="e.g., 100">
+      </div>
+
+      <div class="filter-group">
+        <label>Min Spending (₹)</label>
+        <input type="number" [(ngModel)]="filters.minSpending" placeholder="e.g., 1000">
+      </div>
+
+      <div class="filter-group">
+        <label>Max Spending (₹)</label>
+        <input type="number" [(ngModel)]="filters.maxSpending" placeholder="e.g., 50000">
+      </div>
+    </div>
+
+    <div class="filters-actions">
+      <button class="apply-btn" (click)="applyAdvancedFilters()">Apply Filters</button>
+      <button class="cancel-btn" (click)="toggleFiltersPanel()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Customers Table -->
+  <div class="customers-table-container">
+    <div class="table-header">
+      <h3>📋 Customers List ({{ customers.length }} of {{ totalCustomers }})</h3>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="customers-table">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Contact</th>
+            <th>Registration</th>
+            <th>Status</th>
+            <th>Orders</th>
+            <th>Total Spent</th>
+            <th>Avg Order</th>
+            <th>Last Order</th>
+            <th>Location</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let customer of customers">
+            <td>
+              <div class="customer-info">
+                <div class="customer-avatar">
+                  {{ getInitials(customer.name) }}
+                </div>
+                <div class="customer-details">
+                  <div class="customer-name">{{ customer.name }}</div>
+                  <div class="customer-status-badge" [class]="getCustomerStatusClass(customer.customerStatus)">
+                    {{ customer.customerStatus }}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="contact-info">
+                <div class="email">{{ customer.email }}</div>
+                <div class="phone">{{ customer.phoneNumber || 'N/A' }}</div>
+              </div>
+            </td>
+            <td class="date-cell">
+              {{ formatDate(customer.createdAt) }}
+            </td>
+            <td>
+              <div class="status-toggle">
+                <label class="switch">
+                  <input 
+                    type="checkbox" 
+                    [checked]="customer.isActive"
+                    (change)="toggleCustomerStatus(customer)">
+                  <span class="slider"></span>
+                </label>
+                <span class="status-label" [class.active]="customer.isActive">
+                  {{ customer.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </div>
+            </td>
+            <td>
+              <div class="orders-info">
+                <div class="orders-total">{{ customer.totalOrders }}</div>
+                <div class="orders-recent" *ngIf="customer.ordersLast30Days > 0">
+                  +{{ customer.ordersLast30Days }} (30d)
+                </div>
+              </div>
+            </td>
+            <td class="amount-cell">
+              {{ formatPrice(customer.totalSpent) }}
+            </td>
+            <td class="amount-cell">
+              {{ formatPrice(customer.averageOrderValue) }}
+            </td>
+            <td class="date-cell">
+              <span *ngIf="customer.lastOrderDate">{{ formatDate(customer.lastOrderDate) }}</span>
+              <span *ngIf="!customer.lastOrderDate" class="text-muted">Never</span>
+            </td>
+            <td>
+              <div class="location-info" *ngIf="customer.city || customer.state">
+                <div>{{ customer.city }}</div>
+                <div class="text-muted">{{ customer.state }}</div>
+              </div>
+              <span *ngIf="!customer.city && !customer.state" class="text-muted">N/A</span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="action-btn view-btn" (click)="viewCustomerDetails(customer)" title="View Details">
+                  👁️
+                </button>
+                <button class="action-btn email-btn" (click)="sendEmailToCustomer(customer)" title="Send Email">
+                  ✉️
+                </button>
+                <button class="action-btn orders-btn" (click)="viewCustomerOrders(customer)" title="View Orders">
+                  📦
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="customers.length === 0 && !loading">
+        <div class="empty-icon">👥</div>
+        <h3>No Customers Found</h3>
+        <p>Try adjusting your filters or search criteria</p>
+      </div>
+
+      <!-- Loading State -->
+      <div class="loading-container" *ngIf="loading">
+        <div class="loading-spinner"></div>
+        <p>Loading customers...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" *ngIf="customers.length > 0">
+    <button class="pagination-btn" (click)="previousPage()" [disabled]="currentPage === 1">
+      ← Previous
+    </button>
+    <button 
+      class="pagination-btn" 
+      *ngFor="let page of getPageNumbers()"
+      [class.active]="page === currentPage"
+      (click)="goToPage(page)">
+      {{ page }}
+    </button>
+    <button class="pagination-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">
+      Next →
+    </button>
+    <span class="pagination-info">
+      Page {{ currentPage }} of {{ totalPages }} ({{ totalCustomers }} customers)
+    </span>
+  </div>
+</div>
+
+<!-- Customer Details Modal -->
+<div class="modal-overlay" *ngIf="showCustomerModal" (click)="closeCustomerModal()">
+  <div class="modal-content customer-modal" (click)="$event.stopPropagation()" *ngIf="selectedCustomer">
+    <div class="modal-header">
+      <div class="customer-header-info">
+        <div class="customer-avatar-large">
+          {{ getInitials(selectedCustomer.name) }}
+        </div>
+        <div>
+          <h2>{{ selectedCustomer.name }}</h2>
+          <p class="customer-email">{{ selectedCustomer.email }}</p>
+        </div>
+      </div>
+      <button class="close-btn" (click)="closeCustomerModal()">×</button>
+    </div>
+
+    <!-- Customer Stats Cards -->
+    <div class="customer-stats-grid">
+      <div class="customer-stat-card">
+        <div class="stat-icon">🛍️</div>
+        <div class="stat-info">
+          <div class="stat-value">{{ selectedCustomer.totalOrders }}</div>
+          <div class="stat-label">Total Orders</div>
+        </div>
+      </div>
+      <div class="customer-stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-info">
+          <div class="stat-value">{{ formatPrice(selectedCustomer.totalSpent) }}</div>
+          <div class="stat-label">Total Spent</div>
+        </div>
+      </div>
+      <div class="customer-stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-info">
+          <div class="stat-value">{{ formatPrice(selectedCustomer.averageOrderValue) }}</div>
+          <div class="stat-label">Avg Order Value</div>
+        </div>
+      </div>
+      <div class="customer-stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-info">
+          <div class="stat-value">{{ selectedCustomer.ordersLast30Days }}</div>
+          <div class="stat-label">Orders (30 days)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-body">
+      <!-- Tabs -->
+      <div class="tabs">
+        <button 
+          class="tab-btn"
+          [class.active]="activeTab === 'overview'"
+          (click)="switchTab('overview')">
+          📋 Overview
+        </button>
+        <button 
+          class="tab-btn"
+          [class.active]="activeTab === 'orders'"
+          (click)="switchTab('orders')">
+          📦 Recent Orders
+        </button>
+        <button 
+          class="tab-btn"
+          [class.active]="activeTab === 'spending'"
+          (click)="switchTab('spending')">
+          📈 Spending Trend
+        </button>
+        <button 
+          class="tab-btn"
+          [class.active]="activeTab === 'categories'"
+          (click)="switchTab('categories')">
+          ❤️ Favorite Categories
+        </button>
+      </div>
+
+      <!-- Overview Tab -->
+      <div class="tab-content" *ngIf="activeTab === 'overview'">
+        <div class="info-section">
+          <h3>📱 Contact Information</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Email:</span>
+              <span class="info-value">{{ selectedCustomer.email }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Phone:</span>
+              <span class="info-value">{{ selectedCustomer.phoneNumber || 'Not provided' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Registration:</span>
+              <span class="info-value">{{ formatDate(selectedCustomer.createdAt) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Last Login:</span>
+              <span class="info-value">
+                {{ selectedCustomer.lastLoginAt ? formatDateTime(selectedCustomer.lastLoginAt) : 'Never' }}
+              </span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Status:</span>
+              <span class="info-value">
+                <span class="status-badge" [class]="selectedCustomer.isActive ? 'active' : 'inactive'">
+                  {{ selectedCustomer.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Customer Type:</span>
+              <span class="info-value">
+                <span class="status-badge" [class]="getCustomerStatusClass(selectedCustomer.customerStatus)">
+                  {{ selectedCustomer.customerStatus }}
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-section" *ngIf="selectedCustomer.addresses && selectedCustomer.addresses.length > 0">
+          <h3>📍 Addresses</h3>
+          <div class="addresses-list">
+            <div class="address-card" *ngFor="let address of selectedCustomer.addresses">
+              <div class="address-header">
+                <span class="address-type" *ngIf="address.isDefault">🏠 Default</span>
+                <span class="address-date">Added: {{ formatDate(address.createdAt) }}</span>
+              </div>
+              <div class="address-content">
+                <p>{{ address.addressLine1 }}</p>
+                <p *ngIf="address.addressLine2">{{ address.addressLine2 }}</p>
+                <p>{{ address.city }}, {{ address.state }} {{ address.postalCode }}</p>
+                <p>{{ address.country }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Orders Tab -->
+      <div class="tab-content" *ngIf="activeTab === 'orders'">
+        <div class="orders-list" *ngIf="selectedCustomer.recentOrders && selectedCustomer.recentOrders.length > 0">
+          <div class="order-card" *ngFor="let order of selectedCustomer.recentOrders">
+            <div class="order-header">
+              <span class="order-id">Order #{{ order.orderId }}</span>
+              <span class="order-date">{{ formatDate(order.createdAt) }}</span>
+            </div>
+            <div class="order-details">
+              <div class="order-info">
+                <span class="label">Items:</span>
+                <span class="value">{{ order.itemCount }}</span>
+              </div>
+              <div class="order-info">
+                <span class="label">Total:</span>
+                <span class="value amount">{{ formatPrice(order.totalAmount) }}</span>
+              </div>
+              <div class="order-info">
+                <span class="label">Status:</span>
+                <span class="status-badge" [class]="order.orderStatus">{{ order.orderStatus }}</span>
+              </div>
+              <div class="order-info">
+                <span class="label">Payment:</span>
+                <span class="payment-badge" [class]="order.paymentStatus">
+                  {{ order.paymentStatus }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="empty-message" *ngIf="!selectedCustomer.recentOrders || selectedCustomer.recentOrders.length === 0">
+          <p>No orders found</p>
+        </div>
+      </div>
+
+      <!-- Spending Trend Tab -->
+      <div class="tab-content" *ngIf="activeTab === 'spending'">
+        <div class="spending-chart" *ngIf="selectedCustomer.spendingTrend && selectedCustomer.spendingTrend.length > 0">
+          <div class="chart-bars">
+            <div class="chart-bar" *ngFor="let trend of selectedCustomer.spendingTrend">
+              <div 
+                class="bar" 
+                [style.height.%]="calculatePercentage(trend.totalSpent, selectedCustomer.totalSpent)">
+                <span class="bar-value">{{ formatPrice(trend.totalSpent) }}</span>
+              </div>
+              <div class="bar-label">
+                <div>{{ trend.month }}</div>
+                <div class="orders-count">{{ trend.orderCount }} orders</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="empty-message" *ngIf="!selectedCustomer.spendingTrend || selectedCustomer.spendingTrend.length === 0">
+          <p>No spending data available</p>
+        </div>
+      </div>
+
+      <!-- Favorite Categories Tab -->
+      <div class="tab-content" *ngIf="activeTab === 'categories'">
+        <div class="categories-list" *ngIf="selectedCustomer.favoriteCategories && selectedCustomer.favoriteCategories.length > 0">
+          <div class="category-card" *ngFor="let category of selectedCustomer.favoriteCategories">
+            <div class="category-header">
+              <h4>{{ category.category }}</h4>
+              <span class="category-count">{{ category.purchaseCount }} purchases</span>
+            </div>
+            <div class="category-stats">
+              <div class="category-stat">
+                <span class="label">Total Quantity:</span>
+                <span class="value">{{ category.totalQuantity }}</span>
+              </div>
+              <div class="category-stat">
+                <span class="label">Total Spent:</span>
+                <span class="value">{{ formatPrice(category.totalSpent) }}</span>
+              </div>
+            </div>
+            <div class="progress-bar">
+              <div 
+                class="progress-fill" 
+                [style.width.%]="calculatePercentage(category.totalSpent, selectedCustomer.totalSpent)">
+              </div>
+            </div>
+            <div class="progress-label">
+              {{ calculatePercentage(category.totalSpent, selectedCustomer.totalSpent).toFixed(1) }}% of total spending
+            </div>
+          </div>
+        </div>
+        <div class="empty-message" *ngIf="!selectedCustomer.favoriteCategories || selectedCustomer.favoriteCategories.length === 0">
+          <p>No category data available</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Value Segments Modal -->
+<div class="modal-overlay" *ngIf="showValueSegmentsModal" (click)="closeValueSegmentsModal()">
+  <div class="modal-content segments-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>💎 Customer Value Segments</h2>
+      <button class="close-btn" (click)="closeValueSegmentsModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="segments-grid">
+        <div 
+          class="segment-card" 
+          *ngFor="let segment of valueSegments"
+          [class]="getSegmentClass(segment.segment)">
+          <div class="segment-header">
+            <h3>{{ segment.segment }}</h3>
+            <span class="segment-count">{{ segment.customerCount }} customers</span>
+          </div>
+          <div class="segment-stats">
+            <div class="segment-stat">
+              <span class="label">Average Value:</span>
+              <span class="value">{{ formatPrice(segment.averageValue) }}</span>
+            </div>
+            <div class="segment-stat">
+              <span class="label">Total Value:</span>
+              <span class="value">{{ formatPrice(segment.totalValue) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Top Customers Modal -->
+<div class="modal-overlay" *ngIf="showTopCustomersModal" (click)="closeTopCustomersModal()">
+  <div class="modal-content top-customers-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>🏆 Top Customers</h2>
+      <button class="close-btn" (click)="closeTopCustomersModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="top-customers-list">
+        <div class="top-customer-card" *ngFor="let customer of topCustomers; let i = index">
+          <div class="rank">
+            <span class="rank-number" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
+              {{ i + 1 }}
+            </span>
+          </div>
+          <div class="customer-info">
+            <div class="customer-avatar-small">
+              {{ getInitials(customer.name) }}
+            </div>
+            <div class="customer-details">
+              <div class="customer-name">{{ customer.name }}</div>
+              <div class="customer-email">{{ customer.email }}</div>
+            </div>
+          </div>
+          <div class="customer-stats">
+            <div class="stat">
+              <span class="label">Orders:</span>
+              <span class="value">{{ customer.totalOrders }}</span>
+            </div>
+            <div class="stat">
+              <span class="label">Spent:</span>
+              <span class="value">{{ formatPrice(customer.totalSpent) }}</span>
+            </div>
+            <div class="stat">
+              <span class="label">Avg:</span>
+              <span class="value">{{ formatPrice(customer.averageOrderValue) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

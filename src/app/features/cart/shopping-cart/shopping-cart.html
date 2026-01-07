@@ -1,0 +1,119 @@
+<!-- src/app/features/cart/shopping-cart/shopping-cart.component.html -->
+
+<div class="cart-container">
+  <!-- Header -->
+  <div class="cart-header">
+    <h1 class="cart-title">Shopping Cart</h1>
+    <p class="cart-subtitle">Review your selected items</p>
+  </div>
+
+  <!-- Empty Cart State -->
+  <div *ngIf="isEmpty()" class="empty-cart">
+    <div class="empty-icon">🛒</div>
+    <h2>Your cart is empty</h2>
+    <p>Add some delicious Kashmiri products to get started!</p>
+    <a routerLink="/products" class="btn-continue-shopping">Browse Products</a>
+  </div>
+
+  <!-- Cart with Items -->
+  <div *ngIf="!isEmpty()" class="cart-content">
+    <!-- Cart Items -->
+    <div class="cart-items-section">
+      <div class="cart-items-header">
+        <span>{{ cart().totalItems }} Items</span>
+        <button (click)="clearCart()" class="btn-clear">Clear Cart</button>
+      </div>
+
+      <div class="cart-items">
+        <div *ngFor="let item of cart().items" class="cart-item">
+          <!-- Product Image -->
+          <div class="item-image">
+            <img [src]="getImageUrl(item.imageUrl)" [alt]="item.productName">
+          </div>
+
+          <!-- Product Details -->
+          <div class="item-details">
+            <h3 class="item-name">{{ item.productName }}</h3>
+            <div class="item-meta">
+              <span class="item-category">{{ item.productCategory }}</span>
+              <span class="item-unit">{{ item.productUnit }}</span>
+            </div>
+            <p class="item-price">₹{{ item.price }} per {{ item.productUnit }}</p>
+          </div>
+
+          <!-- Quantity Controls -->
+          <div class="item-quantity">
+            <button 
+              (click)="updateQuantity(item, -1)" 
+              class="qty-btn"
+              [disabled]="item.quantity <= 1">
+              −
+            </button>
+            <span class="qty-display">{{ item.quantity }}</span>
+            <button 
+              (click)="updateQuantity(item, 1)" 
+              class="qty-btn">
+              +
+            </button>
+          </div>
+
+          <!-- Item Total -->
+          <div class="item-total">
+            <p class="total-price">₹{{ item.itemTotal }}</p>
+            <button (click)="removeItem(item.cartItemId)" class="btn-remove">
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cart Summary -->
+    <div class="cart-summary">
+      <div class="summary-card">
+        <h2 class="summary-title">Order Summary</h2>
+        
+        <div class="summary-row">
+          <span>Subtotal ({{ cart().totalItems }} items)</span>
+          <span class="summary-value">₹{{ cart().subtotal }}</span>
+        </div>
+
+        <div class="summary-row">
+          <span>Shipping</span>
+          <span class="summary-value shipping-info">Calculated at checkout</span>
+        </div>
+
+        <div class="summary-row">
+          <span>Tax</span>
+          <span class="summary-value shipping-info">Calculated at checkout</span>
+        </div>
+
+        <div class="summary-divider"></div>
+
+        <div class="summary-row summary-total">
+          <span>Total</span>
+          <span class="total-amount">₹{{ cart().subtotal }}</span>
+        </div>
+
+        <button class="btn-checkout" routerLink="/checkout">
+          Proceed to Checkout
+        </button>
+
+        <a routerLink="/products" class="link-continue">
+          ← Continue Shopping
+        </a>
+
+        <div class="security-badges">
+          <div class="badge">
+            <span class="badge-icon">🔒</span>
+            <span class="badge-text">Secure Checkout</span>
+          </div>
+          <div class="badge">
+            <span class="badge-icon">✓</span>
+            <span class="badge-text">100% Authentic</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

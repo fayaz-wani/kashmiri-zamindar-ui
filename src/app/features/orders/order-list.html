@@ -1,0 +1,75 @@
+<!-- src/app/features/orders/order-list/order-list.html -->
+
+<div class="orders-container">
+  <div class="orders-header">
+    <h1>📦 My Orders</h1>
+    <p>Track and manage your orders</p>
+  </div>
+
+  <div *ngIf="loading" class="loading">Loading orders...</div>
+
+  <div *ngIf="!loading && orders.length === 0" class="empty-state">
+    <div class="empty-icon">📦</div>
+    <h2>No Orders Yet</h2>
+    <p>Start shopping to see your orders here!</p>
+    <button class="btn-primary" routerLink="/products">Shop Now</button>
+  </div>
+
+  <div *ngIf="!loading && orders.length > 0" class="orders-list">
+    <div class="order-card" *ngFor="let order of orders">
+      <div class="order-header">
+        <div class="order-info">
+          <span class="order-id">Order #{{order.orderId}}</span>
+          <span class="order-date">{{formatDate(order.createdAt)}}</span>
+        </div>
+        <span class="status-badge" [ngClass]="getStatusClass(order.orderStatus)">
+          {{order.orderStatus}}
+        </span>
+      </div>
+
+      <div class="order-body">
+        <div class="order-detail">
+          <span class="label">Items:</span>
+          <span class="value">{{order.itemCount}} items</span>
+        </div>
+        <div class="order-detail">
+          <span class="label">Total:</span>
+          <span class="value amount">{{formatPrice(order.totalAmount)}}</span>
+        </div>
+        <div class="order-detail">
+          <span class="label">Payment:</span>
+          <span class="value">{{order.paymentType}}</span>
+        </div>
+        <div class="order-detail">
+          <span class="label">Payment Status:</span>
+          <span class="payment-badge" [class]="order.paymentStatus.toLowerCase()">
+            {{order.paymentStatus}}
+          </span>
+        </div>
+      </div>
+
+      <div class="order-footer">
+        <button class="btn-view" (click)="viewOrderDetails(order.orderGuid)">
+          View Details →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="totalOrders > pageSize" class="pagination">
+    <button 
+      class="btn-page" 
+      [disabled]="currentPage === 1"
+      (click)="changePage(currentPage - 1)">
+      ← Previous
+    </button>
+    <span class="page-info">Page {{currentPage}} of {{totalPages}}</span>
+    <button 
+      class="btn-page" 
+      [disabled]="currentPage === totalPages"
+      (click)="changePage(currentPage + 1)">
+      Next →
+    </button>
+  </div>
+</div>

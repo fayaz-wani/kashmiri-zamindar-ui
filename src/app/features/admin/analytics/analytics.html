@@ -1,0 +1,841 @@
+<div class="analytics-container">
+  <!-- Header -->
+  <div class="analytics-header">
+    <h1>📊 Analytics & Reports</h1>
+    <div class="header-actions">
+      <button class="action-btn" (click)="openComparisonModal()">
+        📊 Compare Periods
+      </button>
+      <button class="action-btn" (click)="printReport()">
+        🖨️ Print
+      </button>
+      <button class="refresh-btn" (click)="refreshAllData()">
+        🔄 Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Time Period Selector -->
+  <div class="period-selector">
+    <button 
+      class="period-btn"
+      [class.active]="selectedDays === 7"
+      (click)="changeDaysFilter(7)">
+      Last 7 Days
+    </button>
+    <button 
+      class="period-btn"
+      [class.active]="selectedDays === 30"
+      (click)="changeDaysFilter(30)">
+      Last 30 Days
+    </button>
+    <button 
+      class="period-btn"
+      [class.active]="selectedDays === 90"
+      (click)="changeDaysFilter(90)">
+      Last 90 Days
+    </button>
+    <button 
+      class="period-btn"
+      [class.active]="selectedDays === 365"
+      (click)="changeDaysFilter(365)">
+      Last Year
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button 
+      class="tab-btn"
+      [class.active]="activeTab === 'overview'"
+      (click)="switchTab('overview')">
+      🏠 Overview
+    </button>
+    <button 
+      class="tab-btn"
+      [class.active]="activeTab === 'sales'"
+      (click)="switchTab('sales')">
+      💰 Sales Analytics
+    </button>
+    <button 
+      class="tab-btn"
+      [class.active]="activeTab === 'products'"
+      (click)="switchTab('products')">
+      📦 Product Analytics
+    </button>
+    <button 
+      class="tab-btn"
+      [class.active]="activeTab === 'customers'"
+      (click)="switchTab('customers')">
+      👥 Customer Analytics
+    </button>
+    <button 
+      class="tab-btn"
+      [class.active]="activeTab === 'revenue'"
+      (click)="switchTab('revenue')">
+      💵 Revenue Report
+    </button>
+  </div>
+
+  <!-- ============================================
+       OVERVIEW TAB
+       ============================================ -->
+  <div class="tab-content" *ngIf="activeTab === 'overview' && executiveSummary">
+    <!-- Executive Summary -->
+    <div class="section">
+      <div class="section-header">
+        <h2>📈 Executive Summary</h2>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-icon">📋</span>
+          <div class="stat-label">Total Orders</div>
+          <div class="stat-value">{{ formatNumber(executiveSummary.overallMetrics.totalOrders) }}</div>
+          <div class="stat-change">
+            Last 30 days: {{ formatNumber(executiveSummary.overallMetrics.ordersLast30Days) }}
+          </div>
+        </div>
+
+        <div class="stat-card success">
+          <span class="stat-icon">💰</span>
+          <div class="stat-label">Total Revenue</div>
+          <div class="stat-value">{{ formatPrice(executiveSummary.overallMetrics.totalRevenue) }}</div>
+          <div class="stat-change">
+            Last 30 days: {{ formatPrice(executiveSummary.overallMetrics.revenueLast30Days) }}
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-icon">📊</span>
+          <div class="stat-label">Avg Order Value</div>
+          <div class="stat-value">{{ formatPrice(executiveSummary.overallMetrics.averageOrderValue) }}</div>
+        </div>
+
+        <div class="stat-card info">
+          <span class="stat-icon">👥</span>
+          <div class="stat-label">Total Customers</div>
+          <div class="stat-value">{{ formatNumber(executiveSummary.overallMetrics.totalCustomers) }}</div>
+          <div class="stat-change">
+            New (30d): {{ formatNumber(executiveSummary.overallMetrics.newCustomersLast30Days) }}
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-icon">📦</span>
+          <div class="stat-label">Total Products</div>
+          <div class="stat-value">{{ formatNumber(executiveSummary.overallMetrics.totalProducts) }}</div>
+          <div class="stat-change">
+            Active: {{ formatNumber(executiveSummary.overallMetrics.activeProducts) }}
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-icon">👤</span>
+          <div class="stat-label">Registered Users</div>
+          <div class="stat-value">{{ formatNumber(executiveSummary.overallMetrics.registeredUsers) }}</div>
+        </div>
+      </div>
+
+      <!-- Growth Metrics -->
+      <div class="growth-section">
+        <h3>📈 Recent Growth (Last 7 Days vs Previous 7 Days)</h3>
+        <div class="growth-grid">
+          <div class="growth-card">
+            <div class="growth-header">
+              <span class="growth-icon">💰</span>
+              <span class="growth-title">Revenue Growth</span>
+            </div>
+            <div class="growth-comparison">
+              <div class="period">
+                <span class="period-label">Previous</span>
+                <span class="period-value">{{ formatPrice(executiveSummary.growthMetrics.previousRevenue) }}</span>
+              </div>
+              <div class="arrow">→</div>
+              <div class="period">
+                <span class="period-label">Recent</span>
+                <span class="period-value">{{ formatPrice(executiveSummary.growthMetrics.recentRevenue) }}</span>
+              </div>
+            </div>
+            <div class="growth-percentage" [class]="getGrowthClass(executiveSummary.growthMetrics.revenueGrowth)">
+              {{ getGrowthIcon(executiveSummary.growthMetrics.revenueGrowth) }}
+              {{ formatPercentage(executiveSummary.growthMetrics.revenueGrowth) }}
+            </div>
+          </div>
+
+          <div class="growth-card">
+            <div class="growth-header">
+              <span class="growth-icon">📦</span>
+              <span class="growth-title">Order Growth</span>
+            </div>
+            <div class="growth-comparison">
+              <div class="period">
+                <span class="period-label">Previous</span>
+                <span class="period-value">{{ formatNumber(executiveSummary.growthMetrics.previousOrders) }}</span>
+              </div>
+              <div class="arrow">→</div>
+              <div class="period">
+                <span class="period-label">Recent</span>
+                <span class="period-value">{{ formatNumber(executiveSummary.growthMetrics.recentOrders) }}</span>
+              </div>
+            </div>
+            <div class="growth-percentage" [class]="getGrowthClass(executiveSummary.growthMetrics.orderGrowth)">
+              {{ getGrowthIcon(executiveSummary.growthMetrics.orderGrowth) }}
+              {{ formatPercentage(executiveSummary.growthMetrics.orderGrowth) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Products -->
+      <div class="top-products-section">
+        <h3>🏆 Top 5 Products</h3>
+        <div class="top-products-list">
+          <div class="top-product-card" *ngFor="let product of executiveSummary.topProducts; let i = index">
+            <div class="rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
+              {{ i + 1 }}
+            </div>
+            <div class="product-info">
+              <div class="product-name">{{ product.productName }}</div>
+              <div class="product-category">{{ product.category }}</div>
+            </div>
+            <div class="product-stats">
+              <div class="stat">
+                <span class="label">Sold:</span>
+                <span class="value">{{ formatNumber(product.totalSold) }}</span>
+              </div>
+              <div class="stat">
+                <span class="label">Revenue:</span>
+                <span class="value">{{ formatPrice(product.totalRevenue) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       SALES ANALYTICS TAB
+       ============================================ -->
+  <div class="tab-content" *ngIf="activeTab === 'sales' && salesAnalytics">
+    <div class="section">
+      <div class="section-header">
+        <h2>💰 Sales Analytics (Last {{ selectedDays }} Days)</h2>
+        <button class="export-btn" (click)="exportSalesReport()">
+          📥 Export
+        </button>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-icon">📋</span>
+          <div class="stat-label">Total Orders</div>
+          <div class="stat-value">{{ formatNumber(salesAnalytics.summary.totalOrders) }}</div>
+        </div>
+
+        <div class="stat-card success">
+          <span class="stat-icon">💰</span>
+          <div class="stat-label">Total Revenue</div>
+          <div class="stat-value">{{ formatPrice(salesAnalytics.summary.totalRevenue) }}</div>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-icon">📊</span>
+          <div class="stat-label">Avg Order Value</div>
+          <div class="stat-value">{{ formatPrice(salesAnalytics.summary.averageOrderValue) }}</div>
+        </div>
+
+        <div class="stat-card info">
+          <span class="stat-icon">👥</span>
+          <div class="stat-label">Total Customers</div>
+          <div class="stat-value">{{ formatNumber(salesAnalytics.summary.totalCustomers) }}</div>
+        </div>
+
+        <div class="stat-card success">
+          <span class="stat-icon">✅</span>
+          <div class="stat-label">Delivered Revenue</div>
+          <div class="stat-value">{{ formatPrice(salesAnalytics.summary.deliveredRevenue) }}</div>
+        </div>
+
+        <div class="stat-card danger">
+          <span class="stat-icon">❌</span>
+          <div class="stat-label">Cancelled Revenue</div>
+          <div class="stat-value">{{ formatPrice(salesAnalytics.summary.cancelledRevenue) }}</div>
+        </div>
+      </div>
+
+      <!-- Daily Sales Chart -->
+      <div class="chart-section" *ngIf="showSalesChart">
+        <div class="chart-header">
+          <h3>📈 Daily Sales Trend</h3>
+          <button class="toggle-btn" (click)="showSalesChart = !showSalesChart">
+            {{ showSalesChart ? '−' : '+' }}
+          </button>
+        </div>
+        <div class="chart-container">
+          <div class="chart-bars">
+            <div class="chart-bar" *ngFor="let sale of salesAnalytics.dailySales">
+              <div 
+                class="bar revenue-bar" 
+                [style.height.%]="getBarHeight(sale.revenue, getMaxValue(salesAnalytics.dailySales, 'revenue'))">
+                <span class="bar-value">{{ formatPrice(sale.revenue) }}</span>
+              </div>
+              <div class="bar-label">
+                <div>{{ formatDate(sale.date) }}</div>
+                <div class="orders-count">{{ sale.orderCount }} orders</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hourly Pattern -->
+      <div class="chart-section" *ngIf="showHourlyChart">
+        <div class="chart-header">
+          <h3>🕐 Hourly Sales Pattern</h3>
+          <button class="toggle-btn" (click)="showHourlyChart = !showHourlyChart">
+            {{ showHourlyChart ? '−' : '+' }}
+          </button>
+        </div>
+        <div class="chart-container">
+          <div class="chart-bars horizontal">
+            <div class="chart-bar-horizontal" *ngFor="let hour of salesAnalytics.hourlyPattern">
+              <div class="bar-label-left">{{ hour.hour }}:00</div>
+              <div 
+                class="bar-horizontal" 
+                [style.width.%]="getBarHeight(hour.revenue, getMaxValue(salesAnalytics.hourlyPattern, 'revenue'))">
+                <span class="bar-value">{{ formatPrice(hour.revenue) }}</span>
+              </div>
+              <div class="bar-info">{{ hour.orderCount }} orders</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Day of Week Pattern -->
+      <div class="chart-section" *ngIf="showDayOfWeekChart">
+        <div class="chart-header">
+          <h3>📅 Day of Week Performance</h3>
+          <button class="toggle-btn" (click)="showDayOfWeekChart = !showDayOfWeekChart">
+            {{ showDayOfWeekChart ? '−' : '+' }}
+          </button>
+        </div>
+        <div class="chart-container">
+          <div class="chart-bars">
+            <div class="chart-bar" *ngFor="let day of salesAnalytics.dayOfWeekPattern">
+              <div 
+                class="bar orders-bar" 
+                [style.height.%]="getBarHeight(day.revenue, getMaxValue(salesAnalytics.dayOfWeekPattern, 'revenue'))">
+                <span class="bar-value">{{ formatPrice(day.revenue) }}</span>
+              </div>
+              <div class="bar-label">
+                <div>{{ day.dayOfWeek }}</div>
+                <div class="orders-count">{{ day.orderCount }} orders</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       PRODUCT ANALYTICS TAB
+       ============================================ -->
+  <div class="tab-content" *ngIf="activeTab === 'products' && productAnalytics">
+    <div class="section">
+      <div class="section-header">
+        <h2>📦 Product Analytics (Last {{ selectedDays }} Days)</h2>
+        <button class="export-btn" (click)="exportProductReport()">
+          📥 Export
+        </button>
+      </div>
+
+      <!-- Top Products -->
+      <div class="subsection">
+        <h3>🏆 Top 10 Products by Revenue</h3>
+        <div class="table-wrapper">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Times Sold</th>
+                <th>Total Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let product of productAnalytics.topProducts; let i = index">
+                <td>
+                  <span class="rank-badge" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
+                    {{ i + 1 }}
+                  </span>
+                </td>
+                <td class="product-name">{{ product.productName }}</td>
+                <td>{{ product.category }}</td>
+                <td>{{ formatNumber(product.totalSold) }}</td>
+                <td class="revenue-cell">{{ formatPrice(product.totalRevenue) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Category Performance -->
+      <div class="subsection" *ngIf="showCategoryChart">
+        <div class="chart-header">
+          <h3>📊 Category Performance</h3>
+          <button class="toggle-btn" (click)="showCategoryChart = !showCategoryChart">
+            {{ showCategoryChart ? '−' : '+' }}
+          </button>
+        </div>
+        <div class="category-grid">
+          <div class="category-card" *ngFor="let category of productAnalytics.categoryPerformance">
+            <div class="category-header">
+              <h4>{{ category.category }}</h4>
+              <span class="product-count">{{ category.productCount }} products</span>
+            </div>
+            <div class="category-stats">
+              <div class="stat-row">
+                <span class="label">Total Sales:</span>
+                <span class="value">{{ formatNumber(category.totalSales) }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="label">Quantity Sold:</span>
+                <span class="value">{{ formatNumber(category.totalQuantity) }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="label">Revenue:</span>
+                <span class="value revenue">{{ formatPrice(category.totalRevenue) }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="label">Avg Price:</span>
+                <span class="value">{{ formatPrice(category.averagePrice) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Low Performers -->
+      <div class="subsection">
+        <h3>⚠️ Low Performing Products</h3>
+        <div class="table-wrapper">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Times Sold</th>
+                <th>Total Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let product of productAnalytics.lowPerformers">
+                <td class="product-name">{{ product.productName }}</td>
+                <td>{{ product.category }}</td>
+                <td>{{ formatPrice(product.price) }}</td>
+                <td>{{ formatNumber(product.timesSold) }}</td>
+                <td class="revenue-cell">{{ formatPrice(product.totalRevenue) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       CUSTOMER ANALYTICS TAB
+       ============================================ -->
+  <div class="tab-content" *ngIf="activeTab === 'customers' && customerAnalytics">
+    <div class="section">
+      <div class="section-header">
+        <h2>👥 Customer Analytics (Last {{ selectedDays }} Days)</h2>
+      </div>
+
+      <!-- Retention Metrics -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-icon">👥</span>
+          <div class="stat-label">Active Customers</div>
+          <div class="stat-value">{{ formatNumber(customerAnalytics.retention.activeCustomers) }}</div>
+        </div>
+
+        <div class="stat-card success">
+          <span class="stat-icon">🔄</span>
+          <div class="stat-label">Returning Customers</div>
+          <div class="stat-value">{{ formatNumber(customerAnalytics.retention.returningCustomers) }}</div>
+        </div>
+
+        <div class="stat-card info">
+          <span class="stat-icon">🆕</span>
+          <div class="stat-label">New with Orders</div>
+          <div class="stat-value">{{ formatNumber(customerAnalytics.retention.newCustomersWithOrders) }}</div>
+        </div>
+      </div>
+
+      <!-- Customer Acquisition Chart -->
+      <div class="chart-section">
+        <h3>📈 Customer Acquisition Trend</h3>
+        <div class="chart-container">
+          <div class="chart-bars">
+            <div class="chart-bar" *ngFor="let acq of customerAnalytics.customerAcquisition">
+              <div 
+                class="bar customer-bar" 
+                [style.height.%]="getBarHeight(acq.newCustomers, getMaxValue(customerAnalytics.customerAcquisition, 'newCustomers'))">
+                <span class="bar-value">{{ acq.newCustomers }}</span>
+              </div>
+              <div class="bar-label">
+                {{ formatDate(acq.date) }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Value Distribution -->
+      <div class="subsection">
+        <h3>💎 Customer Value Distribution</h3>
+        <div class="value-distribution-grid">
+          <div 
+            class="value-segment-card" 
+            *ngFor="let segment of customerAnalytics.valueDistribution"
+            [class]="'seg-' + segment.valueSegment.toLowerCase()
+  .replace(/[^a-z0-9]/g, '-')">
+
+            <div class="segment-header">
+              <h4>{{ segment.valueSegment }}</h4>
+              <span class="customer-count">{{ formatNumber(segment.customerCount) }} customers</span>
+            </div>
+            <div class="segment-stats">
+              <div class="stat-row">
+                <span class="label">Avg Value:</span>
+                <span class="value">{{ formatPrice(segment.averageValue) }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="label">Total Value:</span>
+                <span class="value revenue">{{ formatPrice(segment.totalValue) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Geographic Distribution -->
+      <div class="subsection" *ngIf="showGeographicChart">
+        <div class="chart-header">
+          <h3>🗺️ Geographic Distribution (Top 10)</h3>
+          <button class="toggle-btn" (click)="showGeographicChart = !showGeographicChart">
+            {{ showGeographicChart ? '−' : '+' }}
+          </button>
+        </div>
+        <div class="table-wrapper">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>City</th>
+                <th>State</th>
+                <th>Customers</th>
+                <th>Orders</th>
+                <th>Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let geo of customerAnalytics.geographicDistribution">
+                <td class="city-name">{{ geo.city }}</td>
+                <td>{{ geo.state }}</td>
+                <td>{{ formatNumber(geo.customerCount) }}</td>
+                <td>{{ formatNumber(geo.orderCount) }}</td>
+                <td class="revenue-cell">{{ formatPrice(geo.totalRevenue) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       REVENUE REPORT TAB
+       ============================================ -->
+  <div class="tab-content" *ngIf="activeTab === 'revenue'">
+    <div class="section">
+      <div class="section-header">
+        <h2>💵 Revenue Report</h2>
+        <button class="export-btn" (click)="exportRevenueReport()">
+          📥 Export
+        </button>
+      </div>
+
+      <!-- Date Range Selector -->
+      <div class="date-range-selector">
+        <div class="date-input-group">
+          <label>From Date:</label>
+          <input type="date" [(ngModel)]="revenueStartDate">
+        </div>
+        <div class="date-input-group">
+          <label>To Date:</label>
+          <input type="date" [(ngModel)]="revenueEndDate">
+        </div>
+        <button class="apply-btn" (click)="loadRevenueReport()">
+          Apply
+        </button>
+      </div>
+
+      <div *ngIf="revenueReport">
+        <!-- Summary -->
+        <div class="stats-grid">
+          <div class="stat-card success">
+            <span class="stat-icon">💰</span>
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-value">{{ formatPrice(revenueReport.summary.totalRevenue) }}</div>
+          </div>
+
+          <div class="stat-card">
+            <span class="stat-icon">📋</span>
+            <div class="stat-label">Total Orders</div>
+            <div class="stat-value">{{ formatNumber(revenueReport.summary.totalOrders) }}</div>
+          </div>
+
+          <div class="stat-card">
+            <span class="stat-icon">📊</span>
+            <div class="stat-label">Avg Order Value</div>
+            <div class="stat-value">{{ formatPrice(revenueReport.summary.averageOrderValue) }}</div>
+          </div>
+
+          <div class="stat-card info">
+            <span class="stat-icon">👥</span>
+            <div class="stat-label">Unique Customers</div>
+            <div class="stat-value">{{ formatNumber(revenueReport.summary.uniqueCustomers) }}</div>
+          </div>
+
+          <div class="stat-card">
+            <span class="stat-icon">💵</span>
+            <div class="stat-label">Subtotal</div>
+            <div class="stat-value">{{ formatPrice(revenueReport.summary.totalSubtotal) }}</div>
+          </div>
+
+          <div class="stat-card">
+            <span class="stat-icon">🏷️</span>
+            <div class="stat-label">Tax</div>
+            <div class="stat-value">{{ formatPrice(revenueReport.summary.totalTax) }}</div>
+          </div>
+
+          <div class="stat-card">
+            <span class="stat-icon">🚚</span>
+            <div class="stat-label">Shipping</div>
+            <div class="stat-value">{{ formatPrice(revenueReport.summary.totalShipping) }}</div>
+          </div>
+        </div>
+
+        <!-- Daily Revenue Chart -->
+        <div class="chart-section">
+          <h3>📈 Daily Revenue Breakdown</h3>
+          <div class="chart-container">
+            <div class="chart-bars">
+              <div class="chart-bar" *ngFor="let daily of revenueReport.dailyRevenue">
+                <div 
+                  class="bar revenue-bar" 
+                  [style.height.%]="getBarHeight(daily.totalRevenue, getMaxValue(revenueReport.dailyRevenue, 'totalRevenue'))">
+                  <span class="bar-value">{{ formatPrice(daily.totalRevenue) }}</span>
+                </div>
+                <div class="bar-label">
+                  <div>{{ formatDate(daily.date) }}</div>
+                  <div class="orders-count">{{ daily.orderCount }} orders</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Methods -->
+        <div class="subsection">
+          <h3>💳 Payment Method Breakdown</h3>
+          <div class="payment-grid">
+            <div class="payment-card" *ngFor="let payment of revenueReport.paymentMethods">
+<div class="payment-icon">
+  {{ getPaymentIcon(payment.paymentType) }}
+</div>
+              <div class="payment-type">{{ payment.paymentType }}</div>
+              <div class="payment-stats">
+                <div class="stat-row">
+                  <span class="label">Orders:</span>
+                  <span class="value">{{ formatNumber(payment.orderCount) }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="label">Revenue:</span>
+                  <span class="value revenue">{{ formatPrice(payment.totalRevenue) }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="label">Avg Order:</span>
+                  <span class="value">{{ formatPrice(payment.averageOrderValue) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category Revenue -->
+        <div class="subsection">
+          <h3>📊 Revenue by Category</h3>
+          <div class="table-wrapper">
+            <table class="analytics-table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Orders</th>
+                  <th>Quantity Sold</th>
+                  <th>Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let category of revenueReport.categoryRevenue">
+                  <td class="category-name">{{ category.category }}</td>
+                  <td>{{ formatNumber(category.orderCount) }}</td>
+                  <td>{{ formatNumber(category.totalQuantity) }}</td>
+                  <td class="revenue-cell">{{ formatPrice(category.revenue) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading">
+    <div class="loading-spinner"></div>
+    <p>Loading analytics data...</p>
+  </div>
+</div>
+
+<!-- Comparison Modal -->
+<div class="modal-overlay" *ngIf="showComparisonModal" (click)="closeComparisonModal()">
+  <div class="modal-content comparison-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>📊 Period Comparison</h2>
+      <button class="close-btn" (click)="closeComparisonModal()">×</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="comparison-date-selector">
+        <div class="period-group">
+          <h3>Period 1</h3>
+          <div class="date-inputs">
+            <div class="date-input-group">
+              <label>From:</label>
+              <input type="date" [(ngModel)]="comparisonPeriod1Start">
+            </div>
+            <div class="date-input-group">
+              <label>To:</label>
+              <input type="date" [(ngModel)]="comparisonPeriod1End">
+</div>
+</div>
+</div>
+              
+<div class="vs-divider">VS</div>
+
+    <div class="period-group">
+      <h3>Period 2</h3>
+      <div class="date-inputs">
+        <div class="date-input-group">
+          <label>From:</label>
+          <input type="date" [(ngModel)]="comparisonPeriod2Start">
+        </div>
+        <div class="date-input-group">
+          <label>To:</label>
+          <input type="date" [(ngModel)]="comparisonPeriod2End">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="run-comparison-btn" (click)="runComparison()">
+    Run Comparison
+  </button>
+
+  <!-- Comparison Results -->
+  <div class="comparison-results" *ngIf="comparisonResult">
+    <div class="comparison-grid">
+      <div class="comparison-card">
+        <h4>📋 Orders</h4>
+        <div class="comparison-values">
+          <div class="period-value">
+            <span class="label">Period 1:</span>
+            <span class="value">{{ formatNumber(comparisonResult.period1.totalOrders) }}</span>
+          </div>
+          <div class="period-value">
+            <span class="label">Period 2:</span>
+            <span class="value">{{ formatNumber(comparisonResult.period2.totalOrders) }}</span>
+          </div>
+        </div>
+        <div class="growth-indicator" [class]="getGrowthClass(calculateGrowth(comparisonResult.period1.totalOrders, comparisonResult.period2.totalOrders))">
+          {{ getGrowthIcon(calculateGrowth(comparisonResult.period1.totalOrders, comparisonResult.period2.totalOrders)) }}
+          {{ formatPercentage(calculateGrowth(comparisonResult.period1.totalOrders, comparisonResult.period2.totalOrders)) }}
+        </div>
+      </div>
+
+      <div class="comparison-card">
+        <h4>💰 Revenue</h4>
+        <div class="comparison-values">
+          <div class="period-value">
+            <span class="label">Period 1:</span>
+            <span class="value">{{ formatPrice(comparisonResult.period1.totalRevenue) }}</span>
+          </div>
+          <div class="period-value">
+            <span class="label">Period 2:</span>
+            <span class="value">{{ formatPrice(comparisonResult.period2.totalRevenue) }}</span>
+          </div>
+        </div>
+        <div class="growth-indicator" [class]="getGrowthClass(calculateGrowth(comparisonResult.period1.totalRevenue, comparisonResult.period2.totalRevenue))">
+          {{ getGrowthIcon(calculateGrowth(comparisonResult.period1.totalRevenue, comparisonResult.period2.totalRevenue)) }}
+          {{ formatPercentage(calculateGrowth(comparisonResult.period1.totalRevenue, comparisonResult.period2.totalRevenue)) }}
+        </div>
+      </div>
+
+      <div class="comparison-card">
+        <h4>📊 Avg Order Value</h4>
+        <div class="comparison-values">
+          <div class="period-value">
+            <span class="label">Period 1:</span>
+            <span class="value">{{ formatPrice(comparisonResult.period1.averageOrderValue) }}</span>
+          </div>
+          <div class="period-value">
+            <span class="label">Period 2:</span>
+            <span class="value">{{ formatPrice(comparisonResult.period2.averageOrderValue) }}</span>
+          </div>
+        </div>
+        <div class="growth-indicator" [class]="getGrowthClass(calculateGrowth(comparisonResult.period1.averageOrderValue, comparisonResult.period2.averageOrderValue))">
+          {{ getGrowthIcon(calculateGrowth(comparisonResult.period1.averageOrderValue, comparisonResult.period2.averageOrderValue)) }}
+          {{ formatPercentage(calculateGrowth(comparisonResult.period1.averageOrderValue, comparisonResult.period2.averageOrderValue)) }}
+        </div>
+      </div>
+
+      <div class="comparison-card">
+        <h4>👥 Customers</h4>
+        <div class="comparison-values">
+          <div class="period-value">
+            <span class="label">Period 1:</span>
+            <span class="value">{{ formatNumber(comparisonResult.period1.uniqueCustomers) }}</span>
+          </div>
+          <div class="period-value">
+            <span class="label">Period 2:</span>
+            <span class="value">{{ formatNumber(comparisonResult.period2.uniqueCustomers) }}</span>
+          </div>
+        </div>
+        <div class="growth-indicator" [class]="getGrowthClass(calculateGrowth(comparisonResult.period1.uniqueCustomers, comparisonResult.period2.uniqueCustomers))">
+          {{ getGrowthIcon(calculateGrowth(comparisonResult.period1.uniqueCustomers, comparisonResult.period2.uniqueCustomers)) }}
+          {{ formatPercentage(calculateGrowth(comparisonResult.period1.uniqueCustomers, comparisonResult.period2.uniqueCustomers)) }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>

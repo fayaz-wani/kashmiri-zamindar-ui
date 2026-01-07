@@ -1,0 +1,250 @@
+<div class="product-management-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Product Management</h1>
+      <p class="page-subtitle">Manage your product catalog</p>
+    </div>
+    <button (click)="openCreateModal()" class="btn-create">
+      <span class="btn-icon">➕</span>
+      Add New Product
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearchChange()"
+        placeholder="Search products..."
+        class="search-input"
+      />
+    </div>
+
+    <select [(ngModel)]="selectedCategory" (ngModelChange)="onCategoryChange()" class="category-filter">
+      <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+    </select>
+
+    <div class="results-count">
+      {{ filteredProducts.length }} products
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading products...</p>
+  </div>
+
+  <!-- Products Table -->
+  <div *ngIf="!loading" class="products-table-card">
+    <table class="products-table">
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Product Name</th>
+          <th>Category</th>
+          <th>Price</th>
+          <th>Unit</th>
+          <th>Sales</th>
+          <th>Revenue</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let product of filteredProducts">
+          <td>
+            <div class="product-image">
+              <img [src]="product.imageUrl || 'assets/images/placeholder.jpg'" [alt]="product.name">
+            </div>
+          </td>
+          <td>
+            <div class="product-name-cell">
+              <div class="name">{{ product.name }}</div>
+              <div class="description">{{ product.description | slice:0:50 }}...</div>
+            </div>
+          </td>
+          <td>
+            <span class="category-badge">{{ product.category }}</span>
+          </td>
+          <td class="price-cell">{{ formatPrice(product.price) }}</td>
+          <td>{{ product.unit }}</td>
+          <td class="sales-cell">{{ product.totalSold }}</td>
+          <td class="revenue-cell">{{ formatPrice(product.totalRevenue) }}</td>
+          <td>
+            <span class="status-badge" [class.active]="product.isActive" [class.inactive]="!product.isActive">
+              {{ product.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button (click)="openEditModal(product)" class="action-btn edit" title="Edit">
+                ✏️
+              </button>
+              <button (click)="openImageModal(product)" class="action-btn images" title="Manage Images">
+                🖼️
+              </button>
+              <button (click)="toggleStatus(product)" class="action-btn toggle" title="Toggle Status">
+                {{ product.isActive ? '🔴' : '🟢' }}
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="filteredProducts.length === 0" class="empty-state">
+      <div class="empty-icon">📦</div>
+      <h3>No products found</h3>
+      <p>Try adjusting your search or filters</p>
+    </div>
+  </div>
+</div>
+
+<!-- Create Product Modal -->
+<div *ngIf="showCreateModal" class="modal-overlay" (click)="closeCreateModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Create New Product</h2>
+      <button (click)="closeCreateModal()" class="modal-close">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Product Name *</label>
+          <input type="text" [(ngModel)]="productForm.name" placeholder="Enter product name">
+        </div>
+
+        <div class="form-group">
+          <label>Category *</label>
+          <input type="text" [(ngModel)]="productForm.category" placeholder="e.g., Spices">
+        </div>
+
+        <div class="form-group">
+          <label>Price (₹) *</label>
+          <input type="number" [(ngModel)]="productForm.price" placeholder="0.00">
+        </div>
+
+        <div class="form-group">
+          <label>Unit *</label>
+          <input type="text" [(ngModel)]="productForm.unit" placeholder="e.g., 10 grams">
+        </div>
+
+        <div class="form-group full-width">
+          <label>Description</label>
+          <textarea [(ngModel)]="productForm.description" rows="3" placeholder="Enter product description"></textarea>
+        </div>
+
+        <div class="form-group full-width">
+          <label>Product Images * (Multiple)</label>
+          <input type="file" (change)="onImagesSelected($event)" accept="image/*" multiple class="file-input">
+          
+          <div *ngIf="imagePreviews.length > 0" class="image-previews">
+            <div *ngFor="let preview of imagePreviews; let i = index" class="preview-item">
+              <img [src]="preview" alt="Preview">
+              <button (click)="removeImage(i)" class="remove-preview">✕</button>
+              <span *ngIf="i === 0" class="primary-badge">Primary</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button (click)="closeCreateModal()" class="btn-secondary">Cancel</button>
+      <button (click)="createProduct()" class="btn-primary">Create Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Product Modal -->
+<div *ngIf="showEditModal" class="modal-overlay" (click)="closeEditModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Edit Product</h2>
+      <button (click)="closeEditModal()" class="modal-close">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Product Name *</label>
+          <input type="text" [(ngModel)]="productForm.name">
+        </div>
+
+        <div class="form-group">
+          <label>Category *</label>
+          <input type="text" [(ngModel)]="productForm.category">
+        </div>
+
+        <div class="form-group">
+          <label>Price (₹) *</label>
+          <input type="number" [(ngModel)]="productForm.price">
+        </div>
+
+        <div class="form-group">
+          <label>Unit *</label>
+          <input type="text" [(ngModel)]="productForm.unit">
+        </div>
+
+        <div class="form-group full-width">
+          <label>Description</label>
+          <textarea [(ngModel)]="productForm.description" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="productForm.isActive">
+            Active
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button (click)="closeEditModal()" class="btn-secondary">Cancel</button>
+      <button (click)="updateProduct()" class="btn-primary">Update Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Images Modal -->
+<div *ngIf="showImageModal" class="modal-overlay" (click)="closeImageModal()">
+  <div class="modal-content large" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Manage Product Images</h2>
+      <button (click)="closeImageModal()" class="modal-close">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="image-gallery">
+        <div *ngFor="let image of selectedProduct?.images" class="gallery-item">
+          <img [src]="image.imageUrl" [alt]="selectedProduct.name">
+          <div class="image-overlay">
+            <span *ngIf="image.isPrimary" class="primary-badge">Primary</span>
+            <button (click)="deleteImage(image.imageId)" class="delete-btn">
+              🗑️ Delete
+            </button>
+          </div>
+        </div>
+
+        <div class="gallery-item add-new">
+          <label class="add-new-label">
+            <input type="file" (change)="addNewImage($event)" accept="image/*" hidden>
+            <div class="add-icon">➕</div>
+            <div class="add-text">Add Image</div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button (click)="closeImageModal()" class="btn-primary">Done</button>
+    </div>
+  </div>
+</div>

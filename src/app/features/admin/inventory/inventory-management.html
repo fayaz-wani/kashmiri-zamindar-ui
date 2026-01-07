@@ -1,0 +1,206 @@
+<div class="inventory-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Inventory Management</h1>
+      <p class="page-subtitle">Monitor and manage your stock levels</p>
+    </div>
+  </div>
+
+  <!-- Statistics -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-icon">📦</span>
+      <div class="stat-content">
+        <div class="stat-label">Total Products</div>
+        <div class="stat-value">{{ stats.totalProducts }}</div>
+      </div>
+    </div>
+    
+    <div class="stat-card warning">
+      <span class="stat-icon">⚠️</span>
+      <div class="stat-content">
+        <div class="stat-label">Low Stock</div>
+        <div class="stat-value">{{ stats.lowStockCount }}</div>
+      </div>
+    </div>
+    
+    <div class="stat-card danger">
+      <span class="stat-icon">🚫</span>
+      <div class="stat-content">
+        <div class="stat-label">Out of Stock</div>
+        <div class="stat-value">{{ stats.outOfStockCount }}</div>
+      </div>
+    </div>
+    
+    <div class="stat-card success">
+      <span class="stat-icon">💰</span>
+      <div class="stat-content">
+        <div class="stat-label">Total Value</div>
+        <div class="stat-value">{{ formatPrice(stats.totalValue) }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Low Stock Alerts -->
+  <div *ngIf="lowStockAlerts.length > 0" class="alert-banner">
+    <span class="alert-icon">⚠️</span>
+    <span>{{ lowStockAlerts.length }} products need restocking</span>
+    <button class="alert-btn">View Alerts</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()" 
+             placeholder="Search products..." class="search-input">
+    </div>
+
+    <select [(ngModel)]="selectedCategory" (ngModelChange)="onCategoryChange()" class="filter-select">
+      <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+    </select>
+
+    <select [(ngModel)]="stockStatusFilter" (ngModelChange)="onStockStatusChange()" class="filter-select">
+      <option value="All">All Status</option>
+      <option value="In Stock">In Stock</option>
+      <option value="Low Stock">Low Stock</option>
+      <option value="Out of Stock">Out of Stock</option>
+    </select>
+  </div>
+
+  <!-- Inventory Table -->
+  <div class="table-card">
+    <table class="inventory-table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Category</th>
+          <th>Price</th>
+          <th>Stock Qty</th>
+          <th>Alert Level</th>
+          <th>Status</th>
+          <th>Stock Value</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of filteredInventory">
+          <td>
+            <div class="product-cell">
+              <img [src]="item.imageUrl || 'assets/images/placeholder.jpg'" class="product-thumb">
+              <span class="product-name">{{ item.productName }}</span>
+            </div>
+          </td>
+          <td><span class="category-badge">{{ item.category }}</span></td>
+          <td class="price-cell">{{ formatPrice(item.price) }}</td>
+          <td class="stock-qty">{{ item.stockQuantity }}</td>
+          <td>{{ item.lowStockThreshold }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="getStockStatusClass(item.stockStatus)">
+              {{ item.stockStatus }}
+            </span>
+          </td>
+          <td class="value-cell">{{ formatPrice(item.price * item.stockQuantity) }}</td>
+          <td>
+            <div class="action-buttons">
+              <button (click)="openAdjustModal(item)" class="action-btn">Adjust</button>
+              <button (click)="openHistoryModal(item)" class="action-btn secondary">History</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Adjust Stock Modal -->
+<div *ngIf="showAdjustModal" class="modal-overlay" (click)="closeAdjustModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Adjust Stock: {{ selectedProduct?.productName }}</h2>
+      <button (click)="closeAdjustModal()" class="modal-close">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="current-stock-display">
+        <div class="stock-label">Current Stock</div>
+        <div class="stock-value">{{ selectedProduct?.stockQuantity }}</div>
+      </div>
+
+      <div class="form-group">
+        <label>Change Type</label>
+        <select [(ngModel)]="adjustmentForm.changeType" class="form-select">
+          <option value="Purchase">📦 Purchase (Incoming Stock)</option>
+          <option value="Sale">🛒 Sale (Outgoing Stock)</option>
+          <option value="Adjustment">⚖️ Adjustment (Correction)</option>
+          <option value="Return">↩️ Return (Customer Return)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Quantity Change</label>
+        <input type="number" [(ngModel)]="adjustmentForm.quantityChange" 
+               placeholder="Enter quantity (+ to add, - to subtract)" class="form-input">
+        <small>Use positive numbers to add stock, negative to reduce</small>
+      </div>
+
+      <div class="form-group">
+        <label>Reason</label>
+        <textarea [(ngModel)]="adjustmentForm.reason" rows="3" 
+                  placeholder="Enter reason for this change..." class="form-textarea"></textarea>
+      </div>
+
+      <div class="new-stock-display">
+        <div class="stock-label">New Stock Will Be</div>
+        <div class="stock-value" [class.negative]="(selectedProduct?.stockQuantity + adjustmentForm.quantityChange) < 0">
+          {{ selectedProduct?.stockQuantity + adjustmentForm.quantityChange }}
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button (click)="closeAdjustModal()" class="btn-secondary">Cancel</button>
+      <button (click)="adjustStock()" class="btn-primary">Update Stock</button>
+    </div>
+  </div>
+</div>
+
+<!-- History Modal -->
+<div *ngIf="showHistoryModal" class="modal-overlay" (click)="closeHistoryModal()">
+  <div class="modal-content large" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Stock History: {{ selectedProduct?.productName }}</h2>
+      <button (click)="closeHistoryModal()" class="modal-close">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="history-timeline">
+        <div *ngFor="let entry of inventoryHistory" class="history-entry">
+          <div class="history-icon">{{ getChangeTypeIcon(entry.changeType) }}</div>
+          <div class="history-content">
+            <div class="history-header">
+              <span class="history-type">{{ entry.changeType }}</span>
+              <span class="history-date">{{ formatDate(entry.changedAt) }}</span>
+            </div>
+            <div class="history-change">
+              <span class="change-amount" [class.positive]="entry.quantityChange > 0" 
+                    [class.negative]="entry.quantityChange < 0">
+                {{ entry.quantityChange > 0 ? '+' : '' }}{{ entry.quantityChange }}
+              </span>
+              <span class="stock-levels">
+                {{ entry.previousQuantity }} → {{ entry.newQuantity }}
+              </span>
+            </div>
+            <div *ngIf="entry.reason" class="history-reason">{{ entry.reason }}</div>
+            <div class="history-footer">Changed by {{ entry.changedBy }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button (click)="closeHistoryModal()" class="btn-primary">Close</button>
+    </div>
+  </div>
+</div>

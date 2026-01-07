@@ -1,0 +1,256 @@
+<div class="admin-layout">
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-header">
+      <div class="admin-logo">
+        <span class="logo-icon">🏔️</span>
+        <span class="logo-text">KZ Admin</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/admin/dashboard" [class.active]="activeTab === 'overview'" class="nav-item">
+        <span class="nav-icon">📊</span>
+        <span class="nav-text">Dashboard</span>
+      </a>
+      <a routerLink="/admin/orders" class="nav-item">
+        <span class="nav-icon">📦</span>
+        <span class="nav-text">Orders</span>
+      </a>
+  <a routerLink="/admin/products" class="nav-item">
+  <span class="nav-icon">🛍️</span>
+  <span class="nav-text">Products</span>
+</a>
+      <a routerLink="/admin/customers" class="nav-item">
+        <span class="nav-icon">👥</span>
+        <span class="nav-text">Customers</span>
+      </a>
+            <a routerLink="/admin/inventory" class="nav-item">
+           <span class="nav-icon">🏬</span>
+        <span class="nav-text">Inventory</span>
+      </a>
+
+        <a routerLink="/admin/analytics" class="nav-item">
+           <span class="nav-icon">📈</span>
+        <span class="nav-text">Analytics & Reports</span>
+      </a>
+        <a routerLink="/admin/notifications" class="nav-item">
+    <span class="nav-icon">📧</span>
+    <span class="nav-text">Email Notifications</span>
+  </a>
+      <a routerLink="/admin/settings" class="nav-item">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-text">Settings</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button (click)="logout()" class="logout-btn">
+        <span class="nav-icon">🚪</span>
+        <span class="nav-text">Logout</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="admin-main">
+    <!-- Top Bar -->
+    <header class="admin-topbar">
+      <div class="topbar-left">
+        <h1 class="page-title">Dashboard Overview</h1>
+        <p class="page-subtitle">Welcome back, Admin! Here's what's happening today.</p>
+      </div>
+      <div class="topbar-right">
+<!-- admin-dashboard.html - Update notification button -->
+<button class="icon-btn" (click)="goToNotifications()">
+  <span>🔔</span>
+  <span class="notification-badge">3</span>
+</button>
+        <button class="icon-btn">
+          <span>👤</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="admin-content">
+      
+      <!-- Loading State -->
+      <div *ngIf="loading" class="loading-container">
+        <div class="spinner"></div>
+        <p>Loading dashboard...</p>
+      </div>
+
+      <!-- Dashboard Stats -->
+      <div *ngIf="!loading && stats" class="dashboard-grid">
+        
+        <!-- Stats Cards -->
+        <div class="stats-row">
+          <div class="stat-card stat-primary">
+            <div class="stat-icon">💰</div>
+            <div class="stat-content">
+              <div class="stat-label">Total Revenue</div>
+              <div class="stat-value">{{ formatPrice(stats.totalRevenue) }}</div>
+              <div class="stat-change positive">+12.5% from last month</div>
+            </div>
+          </div>
+
+          <div class="stat-card stat-info">
+            <div class="stat-icon">📦</div>
+            <div class="stat-content">
+              <div class="stat-label">Total Orders</div>
+              <div class="stat-value">{{ stats.totalOrders }}</div>
+              <div class="stat-change positive">+8 new today</div>
+            </div>
+          </div>
+
+          <div class="stat-card stat-success">
+            <div class="stat-icon">👥</div>
+            <div class="stat-content">
+              <div class="stat-label">Customers</div>
+              <div class="stat-value">{{ stats.totalCustomers }}</div>
+              <div class="stat-change positive">+15% this week</div>
+            </div>
+          </div>
+
+          <div class="stat-card stat-warning">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-content">
+              <div class="stat-label">Pending Orders</div>
+              <div class="stat-value">{{ stats.pendingOrders }}</div>
+              <div class="stat-change">Needs attention</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's Stats -->
+        <div class="today-stats">
+          <div class="section-header">
+            <h2 class="section-title">Today's Performance</h2>
+<span class="date-badge">{{ formatDate(todayIso) }}</span>
+          </div>
+          <div class="today-grid">
+            <div class="today-card">
+              <div class="today-label">Revenue</div>
+              <div class="today-value">{{ formatPrice(stats.todayRevenue) }}</div>
+            </div>
+            <div class="today-card">
+              <div class="today-label">Orders</div>
+              <div class="today-value">{{ stats.todayOrders }}</div>
+            </div>
+            <div class="today-card">
+              <div class="today-label">Completed</div>
+              <div class="today-value">{{ stats.completedOrders }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sales Chart -->
+        <div class="chart-card">
+          <div class="section-header">
+            <h2 class="section-title">Sales Overview (Last 7 Days)</h2>
+            <div class="chart-legend">
+              <span class="legend-item">
+                <span class="legend-dot revenue"></span>
+                Revenue
+              </span>
+              <span class="legend-item">
+                <span class="legend-dot orders"></span>
+                Orders
+              </span>
+            </div>
+          </div>
+          
+          <div class="chart-container">
+            <div class="chart-bars">
+              <div *ngFor="let data of salesChart" class="chart-bar-group">
+                <div class="bar-wrapper">
+                  <div class="bar revenue-bar" [style.height]="getChartBarHeight(data.revenue)">
+                    <span class="bar-label">{{ formatPrice(data.revenue) }}</span>
+                  </div>
+                </div>
+                <div class="bar-label-bottom">{{ data.date }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="table-card">
+          <div class="section-header">
+            <h2 class="section-title">Recent Orders</h2>
+            <a routerLink="/admin/orders" class="view-all-link">View All →</a>
+          </div>
+          
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Payment</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let order of recentOrders">
+                  <td class="order-id">{{ order.orderGuid.substring(0, 8) }}</td>
+                  <td>
+                    <div class="customer-cell">
+                      <div class="customer-name">{{ order.customerName }}</div>
+                      <div class="customer-email">{{ order.customerEmail }}</div>
+                    </div>
+                  </td>
+                  <td>{{ formatDate(order.orderDate) }}</td>
+                  <td class="amount">{{ formatPrice(order.totalAmount) }}</td>
+                  <td>
+                    <span class="status-badge" [ngClass]="getStatusClass(order.orderStatus)">
+                      {{ order.orderStatus }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status-badge" [ngClass]="getStatusClass(order.paymentStatus)">
+                      {{ order.paymentStatus }}
+                    </span>
+                  </td>
+                  <td>
+                    <button class="action-btn">View</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Top Products -->
+        <div class="products-card">
+          <div class="section-header">
+            <h2 class="section-title">Top Selling Products</h2>
+            <a routerLink="/admin/products" class="view-all-link">View All →</a>
+          </div>
+          
+          <div class="products-list">
+            <div *ngFor="let product of topProducts; let i = index" class="product-item">
+              <div class="product-rank">{{ i + 1 }}</div>
+              <div class="product-image">
+                <img [src]="product.imageUrl || 'assets/images/placeholder.jpg'" [alt]="product.productName">
+              </div>
+              <div class="product-info">
+                <div class="product-name">{{ product.productName }}</div>
+                <div class="product-category">{{ product.category }}</div>
+              </div>
+              <div class="product-stats">
+                <div class="product-sold">{{ product.totalSold }} sold</div>
+                <div class="product-revenue">{{ formatPrice(product.totalRevenue) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>

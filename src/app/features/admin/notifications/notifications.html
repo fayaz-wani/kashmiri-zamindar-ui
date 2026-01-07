@@ -1,0 +1,429 @@
+<!-- src/app/features/admin/notifications/notifications.component.html -->
+
+<div class="notifications-container">
+  <div class="page-header">
+    <h1>📧 Email Notifications</h1>
+    <button class="btn btn-primary" (click)="processPendingEmails()">
+      <i class="icon">⚡</i> Process Pending Emails
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button 
+      class="tab" 
+      [class.active]="activeTab === 'history'"
+      (click)="activeTab = 'history'">
+      📋 History
+    </button>
+    <button 
+      class="tab" 
+      [class.active]="activeTab === 'statistics'"
+      (click)="activeTab = 'statistics'">
+      📊 Statistics
+    </button>
+    <button 
+      class="tab" 
+      [class.active]="activeTab === 'templates'"
+      (click)="activeTab = 'templates'">
+      📝 Templates
+    </button>
+    <button 
+      class="tab" 
+      [class.active]="activeTab === 'send'"
+      (click)="activeTab = 'send'">
+      ✉️ Send Email
+    </button>
+  </div>
+
+  <!-- ==================== HISTORY TAB ==================== -->
+  <div *ngIf="activeTab === 'history'" class="tab-content">
+    <!-- Filters -->
+    <div class="filters-card">
+      <h3>Filters</h3>
+      <div class="filters-grid">
+        <div class="form-group">
+          <label>Days</label>
+          <select [(ngModel)]="filterDays" class="form-control">
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select [(ngModel)]="filterStatus" class="form-control">
+            <option value="">All Statuses</option>
+            <option *ngFor="let status of statusList" [value]="status">{{status}}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select [(ngModel)]="filterType" class="form-control">
+            <option value="">All Types</option>
+            <option *ngFor="let type of notificationTypes" [value]="type">{{type}}</option>
+          </select>
+        </div>
+        <div class="form-group filter-actions">
+          <button class="btn btn-primary" (click)="applyFilters()">Apply</button>
+          <button class="btn btn-secondary" (click)="clearFilters()">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Email History Table -->
+    <div class="card">
+      <div *ngIf="loading" class="loading">Loading...</div>
+      
+      <table *ngIf="!loading" class="data-table">
+        <thead>
+          <tr>
+            <th>Recipient</th>
+            <th>Subject</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th>Sent At</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let notification of notifications">
+            <td>
+              <div class="recipient-cell">
+                <strong>{{notification.recipientName || 'N/A'}}</strong>
+                <small>{{notification.recipientEmail}}</small>
+              </div>
+            </td>
+            <td>{{notification.subject}}</td>
+            <td>
+              <span class="badge badge-type">{{notification.notificationType}}</span>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="getStatusClass(notification.status)">
+                {{notification.status}}
+              </span>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="getPriorityClass(notification.priority)">
+                {{notification.priority}}
+              </span>
+            </td>
+            <td>{{formatDate(notification.sentAt)}}</td>
+            <td>{{formatDate(notification.createdAt)}}</td>
+            <td>
+              <button class="btn-icon" title="View Details">👁️</button>
+            </td>
+          </tr>
+          <tr *ngIf="notifications.length === 0">
+            <td colspan="8" class="no-data">No email notifications found</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div *ngIf="totalCount > pageSize" class="pagination">
+        <button 
+          class="btn btn-sm" 
+          [disabled]="currentPage === 1"
+          (click)="changePage(currentPage - 1)">
+          Previous
+        </button>
+        <span class="page-info">
+          Page {{currentPage}} of {{totalPages}} ({{totalCount}} total)
+        </span>
+        <button 
+          class="btn btn-sm" 
+          [disabled]="currentPage === totalPages"
+          (click)="changePage(currentPage + 1)">
+          Next
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== STATISTICS TAB ==================== -->
+  <div *ngIf="activeTab === 'statistics'" class="tab-content">
+    <div class="stats-header">
+      <h3>Email Statistics</h3>
+      <select [(ngModel)]="statsDays" (change)="updateStatsDays()" class="form-control">
+        <option value="7">Last 7 days</option>
+        <option value="30">Last 30 days</option>
+        <option value="90">Last 90 days</option>
+      </select>
+    </div>
+
+    <div *ngIf="statistics" class="statistics-content">
+      <!-- Overview Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">📨</div>
+          <div class="stat-details">
+            <div class="stat-value">{{statistics.overview.totalNotifications}}</div>
+            <div class="stat-label">Total Sent</div>
+          </div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-icon">✅</div>
+          <div class="stat-details">
+            <div class="stat-value">{{statistics.overview.sentCount}}</div>
+            <div class="stat-label">Delivered</div>
+          </div>
+        </div>
+        <div class="stat-card error">
+          <div class="stat-icon">❌</div>
+          <div class="stat-details">
+            <div class="stat-value">{{statistics.overview.failedCount}}</div>
+            <div class="stat-label">Failed</div>
+          </div>
+        </div>
+        <div class="stat-card pending">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-details">
+            <div class="stat-value">{{statistics.overview.pendingCount}}</div>
+            <div class="stat-label">Pending</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📈</div>
+          <div class="stat-details">
+            <div class="stat-value">{{statistics.overview.successRate.toFixed(1)}}%</div>
+            <div class="stat-label">Success Rate</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⚡</div>
+          <div class="stat-details">
+            <div class="stat-value">{{statistics.overview.avgDeliveryTimeSeconds.toFixed(0)}}s</div>
+            <div class="stat-label">Avg Delivery Time</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- By Type -->
+      <div class="card">
+        <h3>By Notification Type</h3>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Total</th>
+              <th>Sent</th>
+              <th>Failed</th>
+              <th>Pending</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let type of statistics.byType">
+              <td><strong>{{type.notificationType}}</strong></td>
+              <td>{{type.totalCount}}</td>
+              <td class="text-success">{{type.sentCount}}</td>
+              <td class="text-error">{{type.failedCount}}</td>
+              <td class="text-pending">{{type.pendingCount}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Daily Trend -->
+      <div class="card">
+        <h3>Daily Trend</h3>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Total</th>
+              <th>Sent</th>
+              <th>Failed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let day of statistics.dailyTrend">
+              <td>{{formatDate(day.date)}}</td>
+              <td>{{day.totalCount}}</td>
+              <td class="text-success">{{day.sentCount}}</td>
+              <td class="text-error">{{day.failedCount}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TEMPLATES TAB ==================== -->
+  <div *ngIf="activeTab === 'templates'" class="tab-content">
+    <div class="templates-layout">
+      <!-- Template List -->
+      <div class="templates-sidebar">
+        <div class="sidebar-header">
+          <h3>Templates</h3>
+          <button class="btn btn-primary" (click)="createNewTemplate()">+ New</button>
+        </div>
+        <div class="template-list">
+          <div 
+            *ngFor="let template of templates" 
+            class="template-item"
+            [class.active]="selectedTemplate?.templateGuid === template.templateGuid"
+            (click)="selectTemplate(template)">
+            <div class="template-name">{{template.templateName}}</div>
+            <div class="template-desc">{{template.description || 'No description'}}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Template Editor -->
+      <div class="template-editor">
+        <div *ngIf="!selectedTemplate && !editingTemplate" class="empty-state">
+          <p>Select a template or create a new one</p>
+        </div>
+
+        <div *ngIf="selectedTemplate && !editingTemplate" class="template-view">
+          <div class="template-header">
+            <h3>{{selectedTemplate.templateName}}</h3>
+            <button class="btn btn-primary" (click)="editTemplate()">Edit</button>
+          </div>
+          <div class="template-details">
+            <div class="detail-row">
+              <label>Subject:</label>
+              <div>{{selectedTemplate.subject}}</div>
+            </div>
+            <div class="detail-row">
+              <label>Description:</label>
+              <div>{{selectedTemplate.description || '-'}}</div>
+            </div>
+            <div class="detail-row">
+              <label>Body Template:</label>
+              <div class="template-body">{{selectedTemplate.bodyTemplate}}</div>
+            </div>
+          </div>
+        </div>
+
+        <form *ngIf="editingTemplate" [formGroup]="templateForm" class="template-form">
+          <h3>{{selectedTemplate ? 'Edit Template' : 'New Template'}}</h3>
+          
+          <div class="form-group">
+            <label>Template Name *</label>
+            <input type="text" formControlName="templateName" class="form-control">
+          </div>
+
+          <div class="form-group">
+            <label>Subject *</label>
+            <input type="text" formControlName="subject" class="form-control">
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <input type="text" formControlName="description" class="form-control">
+          </div>
+
+          <div class="form-group">
+            <label>Body Template *</label>
+            <textarea formControlName="bodyTemplate" class="form-control" rows="10"></textarea>
+            <small>Use {{"{{"}}variableName{{"}}"}} for dynamic content</small>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-primary" (click)="saveTemplate()">
+              Save Template
+            </button>
+            <button type="button" class="btn btn-secondary" (click)="cancelEdit()">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SEND EMAIL TAB ==================== -->
+  <div *ngIf="activeTab === 'send'" class="tab-content">
+    <div class="send-email-layout">
+      <!-- Send Custom Email -->
+      <div class="card">
+        <h3>Send Custom Email</h3>
+        <form [formGroup]="sendEmailForm" (ngSubmit)="sendEmail()">
+          <div class="form-group">
+            <label>📝 Select Template (Optional)</label>
+            <select class="form-control" (change)="onTemplateSelect($event)">
+              <option value="">-- Select Template to Auto-fill --</option>
+              <option *ngFor="let template of templates" [value]="template.templateName">
+                {{template.templateName}} - {{template.description}}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Recipient Email *</label>
+              <input type="email" formControlName="recipientEmail" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Recipient Name</label>
+              <input type="text" formControlName="recipientName" class="form-control">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Subject *</label>
+            <input type="text" formControlName="subject" class="form-control">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Notification Type *</label>
+              <select formControlName="notificationType" class="form-control">
+                <option *ngFor="let type of notificationTypes" [value]="type">{{type}}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Priority *</label>
+              <select formControlName="priority" class="form-control">
+                <option *ngFor="let priority of priorityList" [value]="priority">{{priority}}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Schedule For (Optional)</label>
+            <input type="datetime-local" formControlName="scheduledAt" class="form-control">
+          </div>
+
+          <div class="form-group">
+            <label>Email Body *</label>
+            <textarea formControlName="body" class="form-control" rows="8"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary" [disabled]="sendEmailForm.invalid">
+            Send Email
+          </button>
+        </form>
+      </div>
+
+      <!-- Send Test Email -->
+      <div class="card">
+        <h3>Send Test Email</h3>
+        <form [formGroup]="testEmailForm" (ngSubmit)="sendTestEmail()">
+          <div class="form-group">
+            <label>Recipient Email *</label>
+            <input type="email" formControlName="recipientEmail" class="form-control">
+          </div>
+
+          <div class="form-group">
+            <label>Template *</label>
+            <select formControlName="templateName" class="form-control">
+              <option value="">Select Template</option>
+              <option *ngFor="let template of templates" [value]="template.templateName">
+                {{template.templateName}}
+              </option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary" [disabled]="testEmailForm.invalid">
+            Send Test Email
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

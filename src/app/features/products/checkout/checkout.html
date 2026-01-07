@@ -1,0 +1,372 @@
+<!-- features/products/checkout/checkout.html -->
+
+<!-- Checkout Header -->
+<header class="checkout-header">
+  <div class="container">
+    <h1 class="checkout-title">Checkout</h1>
+  </div>
+</header>
+
+<!-- Main Checkout Content -->
+<section class="checkout-section">
+  <div class="container">
+    <div class="checkout-grid">
+      
+      <!-- Left Column - Forms -->
+      <div class="checkout-forms">
+
+        <!-- Error Message -->
+        <div *ngIf="errorMessage" class="error-banner">
+          <span class="error-icon">⚠️</span>
+          {{ errorMessage }}
+          <button class="close-error" (click)="errorMessage = ''">×</button>
+        </div>
+
+        <!-- 1. Customer Information -->
+        <div class="checkout-section-card">
+          <div class="section-header">
+            <div class="section-number">1</div>
+            <h2 class="section-title">Customer Information</h2>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="firstName">First Name:</label>
+              <input 
+                type="text" 
+                id="firstName" 
+                [(ngModel)]="contactInfo.firstName"
+                class="form-input"
+                required>
+            </div>
+
+            <div class="form-group">
+              <label for="lastName">Last Name:</label>
+              <input 
+                type="text" 
+                id="lastName" 
+                [(ngModel)]="contactInfo.lastName"
+                class="form-input"
+                required>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="email">Email:</label>
+              <input 
+                type="email" 
+                id="email" 
+                [(ngModel)]="contactInfo.email"
+                class="form-input"
+                required>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="phone">Phone:</label>
+              <input 
+                type="tel" 
+                id="phone" 
+                [(ngModel)]="contactInfo.phone"
+                class="form-input"
+                maxlength="10"
+                required>
+            </div>
+          </div>
+
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input 
+                type="checkbox" 
+                [(ngModel)]="contactInfo.subscribeMarketing">
+              <span class="checkmark"></span>
+              Subscribe to marketing emails
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label for="orderNotes">Order Notes (Optional):</label>
+            <textarea 
+              id="orderNotes" 
+              [(ngModel)]="contactInfo.orderNotes"
+              class="form-textarea"
+              rows="3"
+              placeholder="Any special instructions?"></textarea>
+          </div>
+        </div>
+
+        <!-- 2. Shipping Address -->
+       <!-- Fix the shipping address section - remove duplicates -->
+<div class="form-grid">
+  <div class="form-group">
+    <label for="shipFirstName">First Name:</label>
+    <input 
+      type="text" 
+      id="shipFirstName" 
+      [(ngModel)]="shippingAddress.firstName"
+      class="form-input">
+  </div>
+
+  <div class="form-group">
+    <label for="shipLastName">Last Name:</label>
+    <input 
+      type="text" 
+      id="shipLastName" 
+      [(ngModel)]="shippingAddress.lastName"
+      class="form-input">
+  </div>
+
+  <div class="form-group full-width">
+    <label for="address1">Address 1:</label>
+    <input 
+      type="text" 
+      id="address1" 
+      [(ngModel)]="shippingAddress.address1"
+      class="form-input"
+      required>
+  </div>
+
+  <div class="form-group full-width">
+    <label for="address2">Address 2:</label>
+    <input 
+      type="text" 
+      id="address2" 
+      [(ngModel)]="shippingAddress.address2"
+      class="form-input"
+      placeholder="Apartment, suite, etc.">
+  </div>
+
+  <div class="form-group">
+    <label for="city">City:</label>
+    <input 
+      type="text" 
+      id="city" 
+      [(ngModel)]="shippingAddress.city"
+      class="form-input"
+      required>
+  </div>
+
+  <div class="form-group">
+    <label for="state">State:</label>
+    <input 
+      type="text" 
+      id="state" 
+      [(ngModel)]="shippingAddress.state"
+      class="form-input"
+      required>
+  </div>
+
+  <div class="form-group">
+    <label for="zip">Zip:</label>
+    <input 
+      type="text" 
+      id="zip" 
+      [(ngModel)]="shippingAddress.zip"
+      class="form-input"
+      maxlength="6"
+      required>
+  </div>
+
+  <div class="form-group">
+    <label for="shipPhone">Phone:</label>
+    <input 
+      type="tel" 
+      id="shipPhone" 
+      [(ngModel)]="shippingAddress.phone"
+      class="form-input">
+  </div>
+</div>
+
+      <!-- Updated Payment Section with Better Card Fields -->
+<!-- Payment Section -->
+<div class="checkout-section-card">
+  <div class="section-header">
+    <div class="section-number">3</div>
+    <h2 class="section-title">Payment Information</h2>
+  </div>
+
+  <!-- COD Option -->
+  <div class="payment-method">
+    <label class="radio-label">
+      <input 
+        type="radio" 
+        name="payment" 
+        value="COD"
+        [(ngModel)]="paymentInfo.paymentType">
+      <span>💵 Cash on Delivery (COD)</span>
+    </label>
+  </div>
+
+  <!-- Card Option -->
+  <div class="payment-method">
+    <label class="radio-label">
+      <input 
+        type="radio" 
+        name="payment" 
+        value="Card"
+        [(ngModel)]="paymentInfo.paymentType">
+      <span>💳 Credit/Debit Card / UPI / Net Banking</span>
+    </label>
+  </div>
+
+  <!-- Card / UPI Info -->
+  <div *ngIf="paymentInfo.paymentType === 'Card' || paymentInfo.paymentType === 'UPI'" class="card-fields-container">
+    <div class="card-info-note">
+      <span class="info-icon">ℹ️</span>
+      <span>You will be redirected to Razorpay's secure payment gateway to complete your payment.</span>
+    </div>
+
+    <div class="payment-methods-preview">
+      <span class="payment-badge">💳 Cards</span>
+      <span class="payment-badge">📱 UPI</span>
+      <span class="payment-badge">🏦 Net Banking</span>
+      <span class="payment-badge">💰 Wallets</span>
+    </div>
+  </div>
+
+  <!-- Billing Address -->
+  <div class="billing-address-section">
+    <h3 class="subsection-title">Billing Address:</h3>
+    <p class="billing-note">Same as shipping address</p>
+  </div>
+
+  <!-- Place Order Button -->
+  <div class="checkout-actions">
+    <button 
+      class="btn btn-back" 
+      (click)="backToCart()"
+      [disabled]="isProcessing">
+      Back to Cart
+    </button>
+    <button 
+      class="btn btn-place-order" 
+      (click)="placeOrder()"
+      [disabled]="isProcessing">
+      <span *ngIf="!isProcessing">Place Order</span>
+      <span *ngIf="isProcessing">Processing...</span>
+    </button>
+  </div>
+</div>
+
+
+        <!-- Action Buttons -->
+  
+
+      </div>
+
+      <!-- Right Column - Order Summary -->
+      <div class="order-summary-column">
+        
+        <!-- Order Summary Card -->
+        <div class="order-summary-card">
+          <h2 class="summary-title">Order Summary</h2>
+
+          <!-- Order Items -->
+          <div class="order-items">
+            <div *ngFor="let item of orderItems" class="order-item">
+              <img 
+                [src]="getProductImage(item)" 
+                [alt]="item.productName"
+                class="item-image">
+              <div class="item-details">
+                <h4 class="item-name">{{ item.productName }}</h4>
+                <p class="item-quantity">× {{ item.quantity }}</p>
+              </div>
+              <div class="item-price">
+                {{ formatPrice(item.price * item.quantity) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Pricing Breakdown -->
+          <div class="pricing-breakdown">
+            <div class="price-row">
+              <span>Subtotal:</span>
+              <span>{{ formatPrice(subtotal) }}</span>
+            </div>
+            <div class="price-row">
+              <span>Tax:</span>
+              <span>{{ formatPrice(tax) }}</span>
+            </div>
+            <div class="price-row">
+              <span>Shipping:</span>
+              <span>{{ formatPrice(shipping) }}</span>
+            </div>
+            <div class="price-row total-row">
+              <span>Total:</span>
+              <span class="total-amount">{{ formatPrice(total) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Information Card -->
+        <div class="additional-info-card">
+          <h3 class="info-title">Additional Information</h3>
+          
+          <div class="info-list">
+            <div class="info-item" *ngIf="additionalFields.gstNumber">
+              <span class="info-label">GST Number:</span>
+              <span class="info-value">{{ additionalFields.gstNumber || 'N/A' }}</span>
+            </div>
+            
+            <div class="info-item" *ngIf="additionalFields.deliveryInstructions">
+              <span class="info-label">Delivery Instructions:</span>
+              <span class="info-value">{{ additionalFields.deliveryInstructions }}</span>
+            </div>
+            
+            <div class="info-item" *ngIf="additionalFields.alternatePhone">
+              <span class="info-label">Alternate Phone:</span>
+              <span class="info-value">{{ additionalFields.alternatePhone }}</span>
+            </div>
+            
+            <div class="info-item" *ngIf="additionalFields.preferredDeliveryTime">
+              <span class="info-label">Preferred Delivery Time:</span>
+              <span class="info-value">{{ additionalFields.preferredDeliveryTime }}</span>
+            </div>
+          </div>
+
+          <!-- Additional Fields Form -->
+          <div class="additional-fields-form">
+            <div class="form-group-small">
+              <label>GST Number (Optional):</label>
+              <input 
+                type="text" 
+                [(ngModel)]="additionalFields.gstNumber"
+                class="form-input-small"
+                placeholder="Enter GST number">
+            </div>
+            
+            <div class="form-group-small">
+              <label>Delivery Instructions:</label>
+              <textarea 
+                [(ngModel)]="additionalFields.deliveryInstructions"
+                class="form-textarea-small"
+                rows="2"
+                placeholder="Call before delivery"></textarea>
+            </div>
+            
+            <div class="form-group-small">
+              <label>Alternate Phone:</label>
+              <input 
+                type="tel" 
+                [(ngModel)]="additionalFields.alternatePhone"
+                class="form-input-small"
+                placeholder="9999999999">
+            </div>
+            
+            <div class="form-group-small">
+              <label>Preferred Delivery Time:</label>
+              <select 
+                [(ngModel)]="additionalFields.preferredDeliveryTime"
+                class="form-select-small">
+                <option value="">Select time</option>
+                <option value="Morning">Morning (9 AM - 12 PM)</option>
+                <option value="Afternoon">Afternoon (12 PM - 4 PM)</option>
+                <option value="Evening">Evening (4 PM - 8 PM)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
